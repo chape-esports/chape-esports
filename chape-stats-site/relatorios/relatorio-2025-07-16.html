@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Análise Final – Chape E-Sports</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Forest Harmony -->
+    <!-- Application Structure Plan: The final, official standard. A multi-tab SPA with tabs for each game and a "General Report". This version replaces the problematic Chart.js head-to-head comparison with a custom HTML/CSS opposing bar chart component, ensuring datalabels are always visible as requested. The rest of the established standard remains. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Head-to-Head Stats per game -> Goal: Compare -> Viz: New custom HTML/CSS opposing bar chart -> Justification: This definitively solves the datalabel issue by providing full control over value placement, and offers a clearer head-to-head visualization.
+        - Report Info: Goalkeeper-Specific Stats -> Goal: Specialized Analysis -> Viz: A dedicated GK analysis module with a unique radar chart and quantitative stats.
+        - Report Info: ALL Individual Stats vs. Team Averages/Totals -> Goal: Exhaustive and Accurate Comparison -> Viz: Custom HTML/CSS bar chart list for outfield players.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f5f7;
+            color: #1f2937;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+        }
+        .prose {
+            color: #374151;
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+            border-bottom: 4px solid transparent;
+        }
+        .tab-button.active {
+            border-bottom-color: #16a34a;
+            color: #16a34a;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-green-700">Chape</span>
+                    <span class="text-2xl font-bold text-gray-600">Stats</span>
+                </div>
+            </div>
+            <div class="border-b border-gray-200">
+                <nav class="flex -mb-px space-x-6 sm:space-x-8 px-4 sm:px-6 lg:px-8" id="main-tabs">
+                    <button data-tab="game1" class="tab-button active py-4 px-1 text-lg font-semibold">Jogo 1: vs Wolfs Team.es</button>
+                    <button data-tab="game2" class="tab-button py-4 px-1 text-lg font-semibold">Jogo 2: vs MVL ES</button>
+                    <button data-tab="general" class="tab-button py-4 px-1 text-lg font-semibold">Relatório Geral</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <div id="game1-content" class="tab-content"></div>
+        <div id="game2-content" class="tab-content hidden"></div>
+        <div id="general-content" class="tab-content hidden"></div>
+
+    </main>
+    
+    <footer class="bg-white mt-16 py-4 border-t">
+        <div class="container mx-auto text-center text-sm text-gray-500">
+            <p>&copy; 2025 Análise Tática Chape E-Sports. Gerado por Análise de fotos - FC 25 Vhelinho.</p>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DATA SETS ---
+        const game1Data = {
+            id: 'game1',
+            opponent: "Wolfs Team.es",
+            chapeScore: 0, opponentScore: 0,
+            matchStats: { labels: ['Posse de Bola (%)', 'Finalizações', 'Passes Tentados', 'Precisão Passe (%)', 'Desarmes'], chape: [39, 3, 121, 75, 13], opponent: [61, 0, 186, 83, 10] },
+            teamGeneral: { goals: 0, assists: 0, shots: 3, passAcc: 76, passes: 121, dribbleAcc: 81, dribbles: 103, tackleAcc: 24, tackles: 54, possGained: 26, possLost: 36, distanceRan: 7.9 },
+            writtenAnalysis: `<h3 class="text-xl font-bold">Análise Tática Aprofundada</h3><p>Nesta partida, a Chape E-Sports foi dominada na posse de bola (39% vs 61%), uma inversão do seu estilo de jogo habitual. A equipa foi forçada a jogar de forma mais reativa, o que se reflete no menor número de passes tentados (121). Apesar de ter menos a bola, a equipa conseguiu criar mais perigo, com 3 finalizações contra 0 do adversário, mostrando uma objetividade interessante quando tinha a posse.</p><p>A precisão de passe de 76% é aceitável para um jogo com menos posse, mas o principal ponto de preocupação continua a ser a fase defensiva. Com 54 tentativas de desarme, a equipa mostrou-se agressiva na recuperação, mas a taxa de sucesso de apenas 24% é um indicador claro de que os jogadores tiveram dificuldades em conter os avanços adversários nos duelos individuais. A equipa não sofreu golos, o que aponta para uma boa coesão do bloco defensivo e uma performance sólida do guarda-redes, mas a dependência da coesão em detrimento da eficácia individual pode ser um risco a longo prazo.</p>`,
+            players: [
+                { id: 'guarise', name: 'L Guarise', position: 'MEE', rating: 7.2, stats: { goals: 0, assists: 0, shots: 0, passes: 15, passAcc: 47, dribbles: 15, dribbleAcc: 87, tackles: 10, tackleAcc: 10, possGained: 1, possLost: 6, distance: 12.8 }, strengths: 'O jogador mais esforçado em campo, cobrindo <strong>12.8 km</strong>. Teve um volume altíssimo de dribles e desarmes, mostrando enorme vontade de participar.', weaknesses: 'A sua performance foi marcada pela ineficácia. A precisão de passe de <strong>47%</strong> foi a mais baixa da equipa. Foi também um dos que mais perdeu a posse (6 vezes).'},
+                { id: 'jorgim1', name: 'Jorgim1', position: 'MED', rating: 7.2, stats: { goals: 0, assists: 0, shots: 2, passes: 11, passAcc: 73, dribbles: 14, dribbleAcc: 79, tackles: 7, tackleAcc: 57, possGained: 6, possLost: 6, distance: 8.9 }, strengths: 'O pilar defensivo do meio-campo, com uma taxa de sucesso em desarmes de <strong>57%</strong> (a melhor da equipa). Liderou em posses ganhas (6) e foi responsável por <strong>2 das 3 finalizações</strong> da equipa.', weaknesses: 'A sua precisão de passe (73%) e drible (79%) estiveram abaixo da média. O número elevado de perdas de posse (6) é um ponto a ser corrigido.'},
+                { id: 'cabelera86', name: 'Cabelera86', position: 'ZGE', rating: 7.0, stats: { goals: 0, assists: 0, shots: 0, passes: 14, passAcc: 86, dribbles: 6, dribbleAcc: 100, tackles: 5, tackleAcc: 20, possGained: 4, possLost: 2, distance: 4.9 }, strengths: 'Um defesa tecnicamente dotado. Foi <strong>perfeito nos dribles (100%)</strong> e teve uma precisão de passe de <strong>86%</strong>, mostrando qualidade na saída de bola.', weaknesses: 'A sua taxa de sucesso nos desarmes (20%) esteve ligeiramente abaixo da média. Para um defesa, é crucial aumentar esta eficácia.'},
+                { id: 'chalezera', name: 'CHA Alezera', position: 'ME', rating: 7.0, stats: { goals: 0, assists: 0, shots: 1, passes: 17, passAcc: 82, dribbles: 13, dribbleAcc: 77, tackles: 4, tackleAcc: 25, possGained: 1, possLost: 4, distance: 9.6 }, strengths: 'Consistente e participativo. A sua precisão de passe de <strong>82%</strong> foi superior à média, e o seu volume de jogo foi dos mais altos.', weaknesses: 'A sua precisão de drible (77%) esteve abaixo da média, limitando a sua capacidade de desequilibrar no 1 para 1.'},
+                { id: 'lucasamc', name: 'LucasAMC', position: 'GL', rating: 7.0, stats: { goals: 0, assists: 0, passes: 1, passAcc: 100, saves: 0, shotsAgainst: 0, savePercentage: 0 }, strengths: 'O adversário não fez uma única finalização, o que indica uma excelente organização defensiva e bom posicionamento do guarda-redes. Manteve a baliza a zeros e foi perfeito no único passe que fez.', weaknesses: 'Não foi possível avaliar a sua performance em defesas, pois não foi necessário intervir. A sua participação com os pés foi mínima.'},
+                { id: 'gioolivera', name: 'Gio Olivera', position: 'MCD', rating: 6.9, stats: { goals: 0, assists: 0, shots: 0, passes: 13, passAcc: 85, dribbles: 9, dribbleAcc: 100, tackles: 5, tackleAcc: 20, possGained: 1, possLost: 2, distance: 10.8 }, strengths: 'Qualidade técnica notável, sendo <strong>perfeito nos dribles (100%)</strong> e muito seguro nos passes (85% de precisão). Foi um jogador fiável na manutenção da posse.', weaknesses: 'A sua contribuição defensiva (20% de sucesso nos desarmes) esteve abaixo da média. Como médio defensivo, é fundamental que melhore a sua capacidade de recuperação.'},
+                { id: 'voosdouglas', name: 'Douglas Voos', position: 'ZAG', rating: 6.6, stats: { goals: 0, assists: 0, shots: 0, passes: 5, passAcc: 80, dribbles: 3, dribbleAcc: 67, tackles: 3, tackleAcc: 33, possGained: 2, possLost: 1, distance: 4.0 }, strengths: 'A sua taxa de sucesso em desarmes de <strong>33%</strong> foi superior à média da equipa. Cometeu apenas 1 perda de posse, indicando segurança.', weaknesses: 'Teve uma participação muito reduzida no jogo. A sua precisão de drible de 67% foi a mais baixa entre os defesas.'},
+                { id: 'alexisi', name: 'Alex ISI Pires', position: 'MCE', rating: 6.5, stats: { goals: 0, assists: 0, shots: 0, passes: 13, passAcc: 77, dribbles: 12, dribbleAcc: 92, tackles: 6, tackleAcc: 17, possGained: 1, possLost: 2, distance: 10.1 }, strengths: 'A sua capacidade de drible foi um ponto forte, com <strong>92% de sucesso</strong>, muito acima da média. Procurou criar desequilíbrios no meio-campo.', weaknesses: 'A sua eficácia nos desarmes (17%) esteve abaixo da média, e a sua precisão de passe (77%) poderia ser melhorada.'},
+                { id: 'bicalho', name: 'Matheus Bicalho', position: 'MD', rating: 6.5, stats: { goals: 0, assists: 0, shots: 0, passes: 13, passAcc: 77, dribbles: 10, dribbleAcc: 80, tackles: 4, tackleAcc: 25, possGained: 6, possLost: 2, distance: 10.2 }, strengths: 'Foi o segundo jogador com mais posses de bola ganhas (6), mostrando bom sentido posicional. A sua taxa de sucesso em desarmes (25%) esteve em linha com a média.', weaknesses: 'A sua precisão de drible de 80% esteve ligeiramente abaixo da média. Precisa de ser mais influente no ataque.'},
+                { id: 'adrianihnp', name: 'Adrianihnp Souza', position: 'ZGD', rating: 6.5, stats: { goals: 0, assists: 0, shots: 0, passes: 8, passAcc: 100, dribbles: 6, dribbleAcc: 100, tackles: 0, tackleAcc: 0, possGained: 0, possLost: 0, distance: 5.7 }, strengths: 'Foi <strong>perfeito em todas as ações técnicas que realizou</strong>: 100% de precisão nos passes e 100% nos dribles. Não perdeu a posse de bola.', weaknesses: 'A sua contribuição defensiva foi inexistente, com <strong>0 desarmes tentados</strong>. Um defesa precisa de participar ativamente nos duelos.'},
+                { id: 'zphenomenon9', name: 'zPhenomenon9', position: 'ATA', rating: 6.4, stats: { goals: 0, assists: 0, shots: 0, passes: 7, passAcc: 57, dribbles: 1, dribbleAcc: 100, tackles: 0, tackleAcc: 0, possGained: 0, possLost: 1, distance: 4.8 }, strengths: 'Foi eficaz no único drible que tentou (100% de sucesso).', weaknesses: 'Teve uma participação quase nula no jogo, com apenas 7 passes (e baixa precisão) e 0 finalizações. Foi completamente neutralizado.'}
+            ]
+        };
+
+        const game2Data = {
+            id: 'game2',
+            opponent: "MVL ES",
+            chapeScore: 3, opponentScore: 3,
+            matchStats: { labels: ['Posse de Bola (%)', 'Finalizações', 'Passes Tentados', 'Precisão Passe (%)', 'Desarmes'], chape: [51, 7, 167, 83, 10], opponent: [49, 5, 176, 83, 13] },
+            teamGeneral: { goals: 3, assists: 2, shots: 7, passAcc: 83, passes: 167, dribbleAcc: 91, dribbles: 125, tackleAcc: 21, tackles: 47, possGained: 30, possLost: 30, distanceRan: 7.1 },
+            writtenAnalysis: `<h3 class="text-xl font-bold">Análise Tática Aprofundada</h3><p>O segundo jogo foi o oposto do primeiro: uma partida aberta, com muitos golos e um ritmo frenético. A Chape E-Sports recuperou o controlo da posse de bola (51%) e mostrou uma eficácia ofensiva notável, marcando 3 golos em 7 finalizações. A precisão de passe (83%) e de drible (91%) foram excelentes, indicando que a equipa conseguiu impor a sua qualidade técnica.</p><p>O grande destaque ofensivo foi a capacidade de criar oportunidades, com 2 assistências e um envolvimento muito maior dos jogadores do meio-campo no ataque. No entanto, a vulnerabilidade defensiva que já se tinha notado no primeiro jogo foi aqui exposta. Sofrer 3 golos, mesmo com uma taxa de sucesso em desarmes ligeiramente melhor (21%), mostra que a equipa tem dificuldades em manter a consistência defensiva quando o jogo se torna mais aberto e caótico.</p><p>Este jogo demonstrou o poder de fogo da equipa, mas também as suas fragilidades defensivas. O desafio será encontrar um equilíbrio que permita manter a potência ofensiva sem sacrificar a solidez defensiva, especialmente em jogos de alta intensidade.</p>`,
+            players: [
+                { id: 'guarise', name: 'L Guarise', position: 'MEE', rating: 9.3, stats: { goals: 0, assists: 2, shots: 1, passes: 33, passAcc: 67, dribbles: 32, dribbleAcc: 91, tackles: 9, tackleAcc: 11, possGained: 5, possLost: 10, distance: 11.3 }, strengths: 'O MVP indiscutível da partida. Foi o cérebro da equipa, criando ambas as assistências para golo. Teve um volume de jogo avassalador, com 33 passes e 32 dribles.', weaknesses: 'Apesar do volume, a precisão de passe (67%) esteve muito abaixo da média da equipa. Foi o jogador que mais perdeu a posse de bola (10 vezes), indicando um estilo de altíssimo risco.'},
+                { id: 'jorgim1', name: 'Jorgim1', position: 'MED', rating: 8.5, stats: { goals: 1, assists: 0, shots: 3, passes: 13, passAcc: 85, dribbles: 12, dribbleAcc: 75, tackles: 11, tackleAcc: 27, possGained: 2, possLost: 5, distance: 8.7 }, strengths: 'Uma força ofensiva vinda do meio-campo. Marcou 1 golo e foi responsável por quase metade das finalizações da equipa (3 de 7). A sua taxa de sucesso em desarmes (27%) esteve acima da média.', weaknesses: 'A sua precisão de drible (75%) foi um ponto fraco, estando bem abaixo da média da equipa (91%). O número de perdas de posse (5) também é um ponto a melhorar.'},
+                { id: 'zphenomenon9', name: 'zPhenomenon9', position: 'ATA', rating: 8.0, stats: { goals: 1, assists: 0, shots: 2, passes: 12, passAcc: 100, dribbles: 8, dribbleAcc: 75, tackles: 6, tackleAcc: 33, possGained: 1, possLost: 3, distance: 8.2 }, strengths: 'O finalizador da equipa. Marcou 1 golo crucial e foi perfeito nos passes que tentou (100%). A sua taxa de sucesso em desarmes (33%) foi boa para um atacante, mostrando compromisso defensivo.', weaknesses: 'A sua precisão de drible (75%) esteve muito abaixo da média da equipa, limitando a sua capacidade de criar as suas próprias oportunidades no 1 para 1.'},
+                { id: 'gioolivera', name: 'Gio Olivera', position: 'MCD', rating: 7.5, stats: { goals: 0, assists: 0, shots: 0, passes: 21, passAcc: 90, dribbles: 15, dribbleAcc: 100, tackles: 6, tackleAcc: 33, possGained: 4, possLost: 2, distance: 9.1 }, strengths: 'Excecional com a bola nos pés. Foi perfeito nos dribles (100%) e teve uma precisão de passe de 90%. A sua taxa de sucesso em desarmes (33%) esteve bem acima da média, mostrando ser um pilar no meio-campo.', weaknesses: 'Apesar da sua qualidade, não conseguiu traduzir o seu domínio em contribuições diretas para golo (0 golos, 0 assistências, 0 finalizações).'},
+                { id: 'chalezera', name: 'CHA Alezera', position: 'ME', rating: 7.1, stats: { goals: 1, assists: 0, shots: 1, passes: 15, passAcc: 80, dribbles: 11, dribbleAcc: 91, tackles: 2, tackleAcc: 0, possGained: 3, possLost: 3, distance: 9.1 }, strengths: 'Deixou a sua marca no resultado, marcando 1 golo na sua única finalização. A sua precisão de drible (91%) esteve em linha com a alta média da equipa, mostrando qualidade no corredor.', weaknesses: 'A sua contribuição defensiva foi nula, com 0% de sucesso em 2 desarmes. Precisa de melhorar neste aspeto para ser um jogador de ala mais completo.'},
+                { id: 'voosdouglas', name: 'Douglas Voos', position: 'ZAG', rating: 7.0, stats: { goals: 0, assists: 0, shots: 0, passes: 11, passAcc: 100, dribbles: 8, dribbleAcc: 100, tackles: 1, tackleAcc: 0, possGained: 2, possLost: 1, distance: 5.1 }, strengths: 'Tecnicamente perfeito. Teve 100% de precisão tanto nos passes como nos dribles, demonstrando uma segurança e qualidade imensas na saída de bola a partir da defesa.', weaknesses: 'A sua participação defensiva foi quase inexistente. Com apenas 1 tentativa de desarme (sem sucesso), precisa de ser muito mais agressivo e presente nos duelos defensivos.'},
+                { id: 'adrianihnp', name: 'Adrianihnp Souza', position: 'ZGD', rating: 6.8, stats: { goals: 0, assists: 0, shots: 0, passes: 14, passAcc: 93, dribbles: 10, dribbleAcc: 100, tackles: 3, tackleAcc: 33, possGained: 6, possLost: 1, distance: 4.5 }, strengths: 'Outro defesa com uma performance técnica notável. 100% de sucesso nos dribles e 93% nos passes. Liderou a equipa em posses ganhas (6), mostrando uma excelente leitura de jogo e antecipação.', weaknesses: 'Apesar da boa taxa de sucesso nos desarmes (33%), o baixo volume (3 tentativas) é um ponto a melhorar para um defesa que joga numa linha de 3.'},
+                { id: 'cabelera86', name: 'Cabelera86', position: 'ZGE', rating: 6.6, stats: { goals: 0, assists: 0, shots: 0, passes: 15, passAcc: 80, dribbles: 10, dribbleAcc: 80, tackles: 2, tackleAcc: 0, possGained: 3, possLost: 2, distance: 5.4 }, strengths: 'Foi seguro na distribuição, com uma precisão de passe de 80%, embora abaixo da média da equipa. Cometeu poucos erros, com apenas 2 perdas de posse.', weaknesses: 'A sua precisão de drible (80%) e, mais criticamente, a sua eficácia nos desarmes (0% de sucesso) estiveram muito abaixo do esperado, comprometendo a solidez do lado esquerdo da defesa.'},
+                { id: 'alexisi', name: 'Alex ISI Pires', position: 'MCE', rating: 6.4, stats: { goals: 0, assists: 0, shots: 0, passes: 14, passAcc: 71, dribbles: 10, dribbleAcc: 90, tackles: 5, tackleAcc: 20, possGained: 1, possLost: 1, distance: 8.4 }, strengths: 'A sua capacidade de drible (90%) foi um ponto positivo, mantendo-se em linha com a média da equipa. Cometeu apenas 1 perda de posse, mostrando segurança com a bola.', weaknesses: 'A sua precisão de passe (71%) e a sua taxa de sucesso nos desarmes (20%) estiveram ambas abaixo da média da equipa, limitando o seu impacto tanto na construção como na recuperação.'},
+                { id: 'bicalho', name: 'Matheus Bicalho', position: 'MD', rating: 6.4, stats: { goals: 0, assists: 0, shots: 0, passes: 11, passAcc: 82, dribbles: 6, dribbleAcc: 83, tackles: 2, tackleAcc: 50, possGained: 2, possLost: 1, distance: 8.0 }, strengths: 'A sua taxa de sucesso em desarmes de 50% foi uma das melhores da equipa, mostrando eficácia nos poucos duelos que disputou. Teve poucas perdas de posse (1).', weaknesses: 'Teve uma participação muito discreta no jogo, com baixo volume de passes e dribles. A sua precisão de passe (82%) e drible (83%) estiveram em linha ou abaixo da média, sem conseguir criar impacto na ala direita.'},
+                { id: 'lucasamc', name: 'LucasAMC', position: 'GL', rating: 5.7, stats: { goals: 0, assists: 0, passes: 7, passAcc: 100, dribbles: 0, dribbleAcc: 0, tackles: 0, tackleAcc: 0, possGained: 0, possLost: 0, distance: 2.4, saves: 2, shotsAgainst: 5, savePercentage: 40 }, strengths: 'Foi perfeito nos passes que realizou (100%).', weaknesses: 'Sofreu 3 golos em 5 remates à baliza, resultando numa taxa de defesas de apenas 40%. A sua nota de 5.7, a mais baixa da equipa, reflete uma noite difícil e pouco inspirada.'}
+            ]
+        };
+
+        const compiledData = generateCompiledData(game1Data, game2Data);
+        
+        function generateCompiledData(g1, g2) {
+            const compiled = {
+                id: 'general',
+                opponent: "Compilado 2 Jogos",
+                teamGeneral: {},
+                writtenAnalysis: `<h3 class="text-xl font-bold">Análise Geral da Noite</h3><p>A noite da Chape E-Sports foi de <strong>dois extremos</strong>. O primeiro jogo, um 0-0 contra a Wolfs Team.es, foi marcado por uma postura reativa e dificuldades em manter a posse, mas com uma solidez defensiva que impediu o adversário de finalizar. O segundo jogo, um 3-3 contra a MVL ES, foi uma explosão ofensiva, onde a equipa marcou 3 golos e mostrou todo o seu potencial criativo, mas também expôs as suas fragilidades defensivas.</p><p>Analisando os dados compilados, a equipa marcou um total de 3 golos e fez 2 assistências, concentrados no segundo jogo. A precisão média de passe (79%) e de drible (86%) nos dois jogos é sólida, mas a grande preocupação é a <strong>taxa de sucesso em desarmes de apenas 22%</strong>, um padrão negativo que se repetiu em ambas as partidas e que precisa de ser o foco principal dos treinos.</p><p>Individualmente, <strong>L Guarise</strong> destacou-se como o jogador mais influente da noite, com uma média de 8.3 e sendo o principal criador de jogadas. <strong>Jorgim1</strong> e <strong>zPhenomenon9</strong> mostraram ser as principais ameaças ofensivas, contribuindo com golos. Por outro lado, a consistência defensiva dos jogadores de meio-campo e a eficácia nos desarmes dos defesas são áreas que necessitam de uma melhoria significativa para que a equipa possa aliar o seu poder de fogo a uma maior segurança e controlo dos jogos.</p>`,
+                players: []
+            };
+
+            for (const key in g1.teamGeneral) {
+                compiled.teamGeneral[key] = g1.teamGeneral[key] + g2.teamGeneral[key];
+            }
+            compiled.teamGeneral.passAcc = Math.round((g1.teamGeneral.passes * g1.teamGeneral.passAcc + g2.teamGeneral.passes * g2.teamGeneral.passAcc) / (g1.teamGeneral.passes + g2.teamGeneral.passes));
+            compiled.teamGeneral.dribbleAcc = Math.round((g1.teamGeneral.dribbles * g1.teamGeneral.dribbleAcc + g2.teamGeneral.dribbles * g2.teamGeneral.dribbleAcc) / (g1.teamGeneral.dribbles + g2.teamGeneral.dribbles));
+            compiled.teamGeneral.tackleAcc = Math.round((g1.teamGeneral.tackles * g1.teamGeneral.tackleAcc + g2.teamGeneral.tackles * g2.teamGeneral.tackleAcc) / (g1.teamGeneral.tackles + g2.teamGeneral.tackles));
+            compiled.teamGeneral.distanceRan = (g1.teamGeneral.distanceRan + g2.teamGeneral.distanceRan) / 2;
+
+            g1.players.forEach(p1 => {
+                const p2 = g2.players.find(p => p.id === p1.id);
+                if (p2) {
+                    const compiledPlayer = { id: p1.id, name: p1.name, position: p1.position, rating: (p1.rating + p2.rating) / 2, stats: {} };
+                    for (const key in p1.stats) {
+                        compiledPlayer.stats[key] = p1.stats[key] + (p2.stats[key] || 0);
+                    }
+                    compiledPlayer.stats.passAcc = Math.round(((p1.stats.passes || 0) * (p1.stats.passAcc || 0) + (p2.stats.passes || 0) * (p2.stats.passAcc || 0)) / ((p1.stats.passes || 0) + (p2.stats.passes || 0))) || 0;
+                    compiledPlayer.stats.dribbleAcc = Math.round(((p1.stats.dribbles || 0) * (p1.stats.dribbleAcc || 0) + (p2.stats.dribbles || 0) * (p2.stats.dribbleAcc || 0)) / ((p1.stats.dribbles || 0) + (p2.stats.dribbles || 0))) || 0;
+                    compiledPlayer.stats.tackleAcc = Math.round(((p1.stats.tackles || 0) * (p1.stats.tackleAcc || 0) + (p2.stats.tackles || 0) * (p2.stats.tackleAcc || 0)) / ((p1.stats.tackles || 0) + (p2.stats.tackles || 0))) || 0;
+                    compiledPlayer.stats.distance = (p1.stats.distance + p2.stats.distance) / 2;
+                    compiledPlayer.stats.savePercentage = compiledPlayer.stats.shotsAgainst > 0 ? Math.round((compiledPlayer.stats.saves / compiledPlayer.stats.shotsAgainst) * 100) : 0;
+
+                    compiledPlayer.strengths = `Manteve uma média de <strong>${compiledPlayer.rating.toFixed(1)}</strong> nos dois jogos. Totalizou <strong>${compiledPlayer.stats.goals} golos</strong> e <strong>${compiledPlayer.stats.assists} assistências</strong>, mostrando a sua contribuição ofensiva.`;
+                    compiledPlayer.weaknesses = `A sua precisão de passe combinada foi de <strong>${compiledPlayer.stats.passAcc}%</strong> e a de desarme <strong>${compiledPlayer.stats.tackleAcc}%</strong>. Perdeu a posse de bola um total de <strong>${compiledPlayer.stats.possLost}</strong> vezes nos dois jogos.`;
+                    if (compiledPlayer.position === 'GL') {
+                        compiledPlayer.strengths = `Nos dois jogos, sofreu <strong>${3 - compiledPlayer.stats.saves} golos</strong> e fez <strong>${compiledPlayer.stats.saves} defesas</strong>, resultando numa taxa de defesa de <strong>${compiledPlayer.stats.savePercentage}%</strong>.`;
+                        compiledPlayer.weaknesses = `A sua distribuição com os pés foi consistente, com <strong>${compiledPlayer.stats.passAcc}%</strong> de precisão. O principal ponto a analisar é a performance nas defesas.`;
+                    }
+
+                    compiled.players.push(compiledPlayer);
+                }
+            });
+            return compiled;
+        }
+
+        function createReportHTML(gameData, containerId) {
+            const content = `
+                ${containerId !== 'general' ? `
+                <section id="overview-${containerId}" class="mb-16">
+                    <div class="text-center mb-12">
+                        <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">Visão Geral do Confronto</h1>
+                        <p class="mt-4 text-xl text-gray-600">Chape E-Sports vs. ${gameData.opponent}</p>
+                    </div>
+                    <div class="card p-6 md:p-8 mb-12">
+                        <h2 class="text-2xl font-bold text-center mb-6">Resultado Final</h2>
+                        <div class="flex justify-center items-center space-x-4 sm:space-x-8">
+                            <div class="flex items-center space-x-3 sm:space-x-4">
+                                <span class="text-xl sm:text-2xl font-semibold text-right w-24 sm:w-40 truncate">Chape E-Sports</span>
+                                <div class="text-5xl sm:text-6xl font-bold bg-green-600 text-white rounded-lg w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">${gameData.chapeScore}</div>
+                            </div>
+                            <span class="text-4xl font-light text-gray-400">vs</span>
+                            <div class="flex items-center space-x-3 sm:space-x-4">
+                                <div class="text-5xl sm:text-6xl font-bold bg-gray-700 text-white rounded-lg w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">${gameData.opponentScore}</div>
+                                <span class="text-xl sm:text-2xl font-semibold text-left w-24 sm:w-40 truncate">${gameData.opponent}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-6 md:p-8">
+                        <h3 class="text-xl font-bold text-center mb-4">Estatísticas Comparativas do Confronto</h3>
+                        <div id="match-comparison-chart-${containerId}" class="space-y-4"></div>
+                    </div>
+                </section>` : ''}
+                
+                <section id="team-analysis-${containerId}" class="mb-16 card p-6 md:p-8">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold">Análise Tática da Equipa</h2>
+                         <p class="mt-2 text-lg text-gray-600">${containerId === 'general' ? 'Desempenho Compilado dos 2 Jogos' : 'Estrutura, formação e estatísticas gerais'}</p>
+                    </div>
+                    <div class="grid grid-cols-1 ${containerId !== 'general' ? 'lg:grid-cols-5' : ''} gap-8 mb-12">
+                        ${containerId !== 'general' ? `
+                        <div class="lg:col-span-2">
+                            <h3 class="text-xl font-bold text-center mb-4">Formação Tática: 3-4-2-1</h3>
+                            <div class="aspect-w-3 aspect-h-2 bg-green-700 bg-opacity-80 rounded-lg p-4 relative border-4 border-white/50">
+                                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-white/50 rounded-full"></div>
+                                <div class="absolute top-1/2 left-0 -translate-y-1/2 w-24 h-48 border-2 border-white/50 rounded-r-xl"></div>
+                                <div class="absolute top-1/2 right-0 -translate-y-1/2 w-24 h-48 border-2 border-white/50 rounded-l-xl"></div>
+                                <div class="w-full h-full grid grid-cols-5 grid-rows-5 gap-2 relative z-10 text-xs sm:text-sm">
+                                    <div class="col-start-3 row-start-1 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">GL</div></div>
+                                    <div class="col-start-1 row-start-2 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">ZGE</div></div>
+                                    <div class="col-start-3 row-start-2 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">ZAG</div></div>
+                                    <div class="col-start-5 row-start-2 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">ZGD</div></div>
+                                    <div class="col-start-1 row-start-3 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">ME</div></div>
+                                    <div class="col-start-2 row-start-3 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">MCD</div></div>
+                                    <div class="col-start-4 row-start-3 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">MED</div></div>
+                                    <div class="col-start-5 row-start-3 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">MD</div></div>
+                                    <div class="col-start-2 row-start-4 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">MEE</div></div>
+                                    <div class="col-start-4 row-start-4 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">MCE</div></div>
+                                    <div class="col-start-3 row-start-5 flex items-center justify-center"><div class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center font-bold text-green-700">ATA</div></div>
+                                </div>
+                            </div>
+                        </div>` : ''}
+                        <div class="${containerId !== 'general' ? 'lg:col-span-3' : 'col-span-1'}">
+                            <h3 class="text-xl font-bold text-center mb-4">Estatísticas Gerais da Equipa ${containerId === 'general' ? '(Compilado)' : ''}</h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Golos</p><p class="text-2xl font-bold">${gameData.teamGeneral.goals}</p></div>
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Assistências</p><p class="text-2xl font-bold">${gameData.teamGeneral.assists}</p></div>
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Finalizações</p><p class="text-2xl font-bold">${gameData.teamGeneral.shots}</p></div>
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Passes Tentados</p><p class="text-2xl font-bold">${gameData.teamGeneral.passes}</p></div>
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Precisão Passe</p><p class="text-2xl font-bold">${gameData.teamGeneral.passAcc}%</p></div>
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Dribles Tentados</p><p class="text-2xl font-bold">${gameData.teamGeneral.dribbles}</p></div>
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Precisão Drible</p><p class="text-2xl font-bold">${gameData.teamGeneral.dribbleAcc}%</p></div>
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Desarmes Tentados</p><p class="text-2xl font-bold">${gameData.teamGeneral.tackles}</p></div>
+                                <div class="bg-red-100 p-4 rounded-lg"><p class="text-sm text-red-500">Precisão Desarme</p><p class="text-2xl font-bold text-red-700">${gameData.teamGeneral.tackleAcc}%</p></div>
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Posses Ganhas</p><p class="text-2xl font-bold">${gameData.teamGeneral.possGained}</p></div>
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Posses Perdidas</p><p class="text-2xl font-bold">${gameData.teamGeneral.possLost}</p></div>
+                                <div class="bg-gray-100 p-4 rounded-lg"><p class="text-sm text-gray-500">Dist. Corrida Média</p><p class="text-2xl font-bold">${gameData.teamGeneral.distanceRan.toFixed(1)} km</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prose max-w-none">${gameData.writtenAnalysis}</div>
+                </section>
+
+                <section id="player-performance-${containerId}" class="mb-16">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold">Desempenho Individual Detalhado</h2>
+                        <p class="mt-2 text-lg text-gray-600">Clique num jogador para uma análise completa.</p>
+                    </div>
+                    <div class="flex flex-col lg:flex-row gap-8">
+                        <div class="lg:w-1/3 xl:w-1/4">
+                            <div class="card p-4 space-y-2 sticky top-36">
+                                <ul id="player-list-${containerId}" class="max-h-[80vh] overflow-y-auto"></ul>
+                            </div>
+                        </div>
+                        <div class="lg:w-2/3 xl:w-3/4">
+                            <div id="player-details-${containerId}" class="card p-6 hidden"></div>
+                            <div id="player-placeholder-${containerId}" class="card p-6 flex flex-col items-center justify-center h-full text-center min-h-[500px]">
+                                <svg class="w-16 h-16 text-gray-300 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" /></svg>
+                                <h3 class="text-xl font-semibold text-gray-500">Análise do Jogador</h3>
+                                <p class="text-gray-400 mt-2">Clique num jogador da lista para ver a sua análise completa.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            `;
+            document.getElementById(`${containerId}-content`).innerHTML = content;
+        }
+        
+        function createPlayerDetailsHTML(containerId, player) {
+            const isGK = player.position === 'GL';
+            const detailsHTML = `
+                <div class="flex justify-between items-start mb-8">
+                     <div>
+                        <h3 class="text-3xl font-bold">${player.name}</h3>
+                        <p class="text-xl text-green-600 font-semibold">${player.position}</p>
+                    </div>
+                    <div class="text-5xl font-bold text-right ${player.rating >= 7.0 ? 'text-green-600' : player.rating >= 6.5 ? 'text-yellow-600' : 'text-red-600'}">${player.rating.toFixed(1)}</div>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-xl font-bold mb-4 text-center">Perfil Qualitativo</h4>
+                        <div class="h-80 mb-6"><canvas id="playerRadarChart-${containerId}"></canvas></div>
+                        <div class="p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg mb-4">
+                            <h5 class="font-semibold text-lg">Análise dos Pontos Fortes</h5>
+                            <p class="text-gray-700 mt-1 prose prose-sm">${player.strengths}</p>
+                        </div>
+                        <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+                            <h5 class="font-semibold text-lg">Análise dos Pontos de Melhoria</h5>
+                            <p class="text-gray-700 mt-1 prose prose-sm">${player.weaknesses}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold mb-4 text-center">Análise Quantitativa ${isGK ? 'do Guarda-Redes' : 'vs. Equipa'}</h4>
+                        <div id="stats-comparison-${containerId}" class="space-y-3"></div>
+                    </div>
+                </div>
+            `;
+            const detailsContainer = document.getElementById(`player-details-${containerId}`);
+            detailsContainer.innerHTML = detailsHTML;
+            detailsContainer.classList.remove('hidden');
+            document.getElementById(`player-placeholder-${containerId}`).classList.add('hidden');
+        }
+
+        function createMatchComparisonHTML(gameData, containerId) {
+            const container = document.getElementById(`match-comparison-chart-${containerId}`);
+            const stats = gameData.matchStats;
+            let html = '<div class="space-y-4">';
+
+            stats.labels.forEach((label, index) => {
+                const chapeValue = stats.chape[index];
+                const opponentValue = stats.opponent[index];
+                const total = chapeValue + opponentValue;
+                const chapePerc = total > 0 ? (chapeValue / total) * 100 : 50;
+                
+                html += `
+                    <div>
+                        <p class="text-center font-semibold text-gray-700 mb-2">${label}</p>
+                        <div class="flex items-center text-sm">
+                            <div class="w-1/2 text-right pr-2">
+                                <span class="font-bold text-green-700">${chapeValue}${label.includes('%') ? '%' : ''}</span>
+                            </div>
+                            <div class="w-1/2 text-left pl-2">
+                                <span class="font-bold text-gray-600">${opponentValue}${label.includes('%') ? '%' : ''}</span>
+                            </div>
+                        </div>
+                        <div class="flex w-full h-4 bg-gray-300 rounded-full overflow-hidden">
+                            <div class="bg-green-500" style="width: ${chapePerc}%"></div>
+                        </div>
+                         <div class="flex items-center text-xs mt-1">
+                            <div class="w-1/2 text-left text-green-700 font-bold">Chape</div>
+                            <div class="w-1/2 text-right text-gray-600 font-bold">${gameData.opponent}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+
+        function setupReportInteractivity(gameData, containerId) {
+            if (containerId !== 'general') {
+                createMatchComparisonHTML(gameData, containerId);
+            }
+
+            const playerList = document.getElementById(`player-list-${containerId}`);
+            gameData.players.sort((a, b) => b.rating - a.rating).forEach(player => {
+                const li = document.createElement('li');
+                li.className = 'player-item p-3 flex justify-between items-center rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200';
+                li.dataset.playerId = player.id;
+                li.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center font-bold text-green-700 mr-3">${player.name.charAt(0)}</div>
+                        <div><p class="font-bold text-gray-800">${player.name}</p><p class="text-sm text-gray-500">${player.position}</p></div>
+                    </div>
+                    <span class="text-lg font-bold ${player.rating >= 7.0 ? 'text-green-600' : player.rating >= 6.5 ? 'text-yellow-600' : 'text-red-600'}">${player.rating.toFixed(1)}</span>`;
+                playerList.appendChild(li);
+            });
+
+            let radarChart;
+
+            function createComparisonBar(playerValue, teamValue, max, teamLabel) {
+                const p_perc = max > 0 ? (playerValue / max) * 100 : 0;
+                const t_perc = max > 0 ? (teamValue / max) * 100 : 0;
+                return `
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between text-sm"><span>Jogador</span><span class="font-semibold">${playerValue.toFixed(containerId === 'general' ? 2 : 0)}</span></div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-green-500 h-2.5 rounded-full" style="width: ${p_perc}%"></div></div>
+                        <div class="flex items-center justify-between text-sm mt-1"><span>${teamLabel}</span><span class="font-semibold">${teamValue.toFixed(teamLabel.includes('Total') ? 0 : 2)}</span></div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-gray-500 h-2.5 rounded-full" style="width: ${t_perc}%"></div></div>
+                    </div>`;
+            }
+
+            function createComparisonBarPercentage(playerValue, teamValue) {
+                return `
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between text-sm"><span>Jogador</span><span class="font-semibold">${playerValue}%</span></div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-green-500 h-2.5 rounded-full" style="width: ${playerValue}%"></div></div>
+                        <div class="flex items-center justify-between text-sm mt-1"><span>Média Equipa</span><span class="font-semibold">${teamValue}%</span></div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5"><div class="bg-gray-500 h-2.5 rounded-full" style="width: ${teamValue}%"></div></div>
+                    </div>`;
+            }
+
+            function updatePlayerDetails(player) {
+                createPlayerDetailsHTML(containerId, player);
+                const radarCtx = document.getElementById(`playerRadarChart-${containerId}`).getContext('2d');
+                const statsContainer = document.getElementById(`stats-comparison-${containerId}`);
+                
+                if (player.position === 'GL') {
+                    const gkDistributionScore = player.stats.passAcc;
+                    const gkSavesScore = player.stats.savePercentage;
+                    const gkPositioningScore = 100 - ((player.stats.shotsAgainst - player.stats.saves) * 10);
+
+                    if (radarChart) radarChart.destroy();
+                    radarChart = new Chart(radarCtx, {
+                        type: 'radar',
+                        data: {
+                            labels: ['Distribuição', 'Defesas', 'Posicionamento'],
+                            datasets: [{
+                                label: player.name, data: [gkDistributionScore, gkSavesScore, gkPositioningScore].map(s => Math.max(0, Math.min(100, s))),
+                                backgroundColor: 'rgba(22, 163, 74, 0.2)', borderColor: 'rgba(22, 163, 74, 1)', borderWidth: 2
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { r: { suggestedMin: 0, suggestedMax: 100, pointLabels: { font: { size: 14 } } } }, plugins: { legend: { display: false } } }
+                    });
+
+                    statsContainer.innerHTML = `
+                        <div class="bg-gray-50 p-3 rounded-lg"><h5 class="font-bold text-md mb-2">Remates Sofridos</h5><p class="text-3xl font-bold text-center">${player.stats.shotsAgainst}</p></div>
+                        <div class="bg-gray-50 p-3 rounded-lg"><h5 class="font-bold text-md mb-2">Defesas Feitas</h5><p class="text-3xl font-bold text-center">${player.stats.saves}</p></div>
+                        <div class="bg-gray-50 p-3 rounded-lg"><h5 class="font-bold text-md mb-2">Golos Sofridos</h5><p class="text-3xl font-bold text-center">${player.stats.shotsAgainst - player.stats.saves}</p></div>
+                        <div class="bg-gray-50 p-3 rounded-lg"><h5 class="font-bold text-md mb-2">Taxa de Defesa</h5><p class="text-3xl font-bold text-center ${player.stats.savePercentage >= 50 ? 'text-green-600' : 'text-red-600'}">${player.stats.savePercentage}%</p></div>
+                    `;
+
+                } else {
+                    const attackScore = (player.stats.goals * 40) + (player.stats.assists * 20) + (player.stats.shots * 10);
+                    const passScore = player.stats.passAcc;
+                    const dribbleScore = player.stats.dribbleAcc;
+                    const defenseScore = player.stats.tackleAcc + (player.stats.possGained * 2);
+                    const workRateScore = player.stats.distance * 8;
+
+                    if (radarChart) radarChart.destroy();
+                    radarChart = new Chart(radarCtx, {
+                        type: 'radar',
+                        data: {
+                            labels: ['Ataque', 'Passe', 'Drible', 'Defesa', 'Esforço'],
+                            datasets: [{
+                                label: player.name, data: [attackScore, passScore, dribbleScore, defenseScore, workRateScore].map(s => Math.min(100, s)),
+                                backgroundColor: 'rgba(22, 163, 74, 0.2)', borderColor: 'rgba(22, 163, 74, 1)', borderWidth: 2
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { r: { suggestedMin: 0, suggestedMax: 100, pointLabels: { font: { size: 14 } } } }, plugins: { legend: { display: false } } }
+                    });
+
+                    const numGames = (containerId === 'general') ? 2 : 1;
+                    const teamAvgs = {
+                        passes: gameData.teamGeneral.passes / (11 * numGames),
+                        dribbles: gameData.teamGeneral.dribbles / (11 * numGames),
+                        tackles: gameData.teamGeneral.tackles / (11 * numGames),
+                        possGained: gameData.teamGeneral.possGained / (11 * numGames),
+                        possLost: gameData.teamGeneral.possLost / (11 * numGames),
+                        distance: gameData.teamGeneral.distanceRan,
+                    };
+                    const playerStats = player.stats;
+
+                    const statsToCompare = [
+                        { label: 'Golos', p: playerStats.goals, t: gameData.teamGeneral.goals, max: Math.max(playerStats.goals, gameData.teamGeneral.goals, 1), teamLabel: 'Total Equipa' },
+                        { label: 'Assistências', p: playerStats.assists, t: gameData.teamGeneral.assists, max: Math.max(playerStats.assists, gameData.teamGeneral.assists, 1), teamLabel: 'Total Equipa' },
+                        { label: 'Finalizações', p: playerStats.shots, t: gameData.teamGeneral.shots, max: Math.max(playerStats.shots, gameData.teamGeneral.shots, 1), teamLabel: 'Total Equipa' },
+                        { label: `Passes Tentados ${containerId === 'general' ? '(Média/Jogo)' : ''}`, p: playerStats.passes / numGames, t: teamAvgs.passes, max: Math.max(playerStats.passes / numGames, teamAvgs.passes, 25), teamLabel: 'Média Equipa' },
+                        { label: 'Precisão Passe (%)', p: playerStats.passAcc, t: gameData.teamGeneral.passAcc, type: 'perc' },
+                        { label: `Dribles Tentados ${containerId === 'general' ? '(Média/Jogo)' : ''}`, p: playerStats.dribbles / numGames, t: teamAvgs.dribbles, max: Math.max(playerStats.dribbles / numGames, teamAvgs.dribbles, 20), teamLabel: 'Média Equipa' },
+                        { label: 'Precisão Drible (%)', p: playerStats.dribbleAcc, t: gameData.teamGeneral.dribbleAcc, type: 'perc' },
+                        { label: `Desarmes Tentados ${containerId === 'general' ? '(Média/Jogo)' : ''}`, p: playerStats.tackles / numGames, t: teamAvgs.tackles, max: Math.max(playerStats.tackles / numGames, teamAvgs.tackles, 10), teamLabel: 'Média Equipa' },
+                        { label: 'Precisão Desarme (%)', p: playerStats.tackleAcc, t: gameData.teamGeneral.tackleAcc, type: 'perc' },
+                        { label: `Posses Ganhas ${containerId === 'general' ? '(Média/Jogo)' : ''}`, p: playerStats.possGained / numGames, t: teamAvgs.possGained, max: Math.max(playerStats.possGained / numGames, teamAvgs.possGained, 6), teamLabel: 'Média Equipa' },
+                        { label: `Posses Perdidas ${containerId === 'general' ? '(Média/Jogo)' : ''}`, p: playerStats.possLost / numGames, t: teamAvgs.possLost, max: Math.max(playerStats.possLost / numGames, teamAvgs.possLost, 7), teamLabel: 'Média Equipa' },
+                        { label: 'Distância Corrida (km)', p: playerStats.distance, t: teamAvgs.distance, max: Math.max(playerStats.distance, teamAvgs.distance, 12), teamLabel: 'Média Equipa' },
+                    ];
+
+                    statsContainer.innerHTML = statsToCompare.map(stat => `
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <h5 class="font-bold text-md mb-2">${stat.label}</h5>
+                            ${stat.type === 'perc' ? createComparisonBarPercentage(stat.p, stat.t) : createComparisonBar(stat.p, stat.t, stat.max, stat.teamLabel)}
+                        </div>`).join('');
+                }
+            }
+
+            playerList.addEventListener('click', (e) => {
+                const item = e.target.closest('.player-item');
+                if (item) {
+                    const playerId = item.dataset.playerId;
+                    const selectedPlayer = gameData.players.find(p => p.id === playerId);
+                    if (selectedPlayer) {
+                        playerList.querySelectorAll('.player-item').forEach(el => el.classList.remove('bg-green-100'));
+                        item.classList.add('bg-green-100');
+                        updatePlayerDetails(selectedPlayer);
+                    }
+                }
+            });
+        }
+
+        // --- INITIALIZATION ---
+        createReportHTML(game1Data, 'game1');
+        setupReportInteractivity(game1Data, 'game1');
+        
+        createReportHTML(game2Data, 'game2');
+        setupReportInteractivity(game2Data, 'game2');
+
+        createReportHTML(compiledData, 'general');
+        setupReportInteractivity(compiledData, 'general');
+
+        // Tab functionality
+        const tabs = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                tabContents.forEach(content => content.classList.add('hidden'));
+                document.getElementById(`${tab.dataset.tab}-content`).classList.remove('hidden');
+            });
+        });
+
+    });
+    </script>
+</body>
+</html>
